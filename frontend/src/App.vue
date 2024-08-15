@@ -6,11 +6,20 @@
 
 <script>
 export default {
-  name: 'App'
+  name: 'App',
 }
 </script>
 
 <style>
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background-color: #0B0B0B;
+  font-family: "Roboto", sans-serif;
+}
+
+
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;

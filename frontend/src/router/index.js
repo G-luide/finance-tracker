@@ -1,22 +1,22 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import SignUp from '../components/SignUp.vue';
-import UserDashboard from '../components/UserDashboard.vue';
+import HomePage from '@/components/HomePage.vue';
+import Login from '@/components/Login.vue';
 
 const routes = [
   {
-    path: '/',
-    name: 'SignUp',
-    component: SignUp
+    path: "/",
+    name: "HomePage",
+    component: HomePage,
   },
   {
-    path: '/dashboard',
-    name: 'UserDashboard',
-    component: UserDashboard
+    path: "/login",
+    name: "Login",
+    component: Login
   }
 ];
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(process.env.BASE_URL),
   routes
 });
 
