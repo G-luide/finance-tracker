@@ -1,37 +1,47 @@
-from flask import Flask, jsonify
+from flask import Flask, request, jsonify
+from flask_mysqldb import MySQL
+import MySQLdb.cursors
+import re
 from flask_cors import CORS
-import requests
-import config
 
 app = Flask(__name__)
-CORS(app)
 
-# Defineeri LHV API detailid
-LHV_API_BASE_URL = 'https://api.sandbox.lhv.eu/psd2/v1'
-AUTH_TOKEN = 'Bearer Liis-MariMnnik'  # Kasuta autoriseeritud tokenit
-CERTIFICATE_PATH = config.CERTIFICATE_PATH
-PRIVATE_KEY_PATH = config.PRIVATE_KEY_PATH
+# MySQL konfigureerimine
+app.config['MYSQL_HOST'] = 'host'
+app.config['MYSQL_USER'] = 'username'
+app.config['MYSQL_PASSWORD'] = 'password'
+app.config['MYSQL_DB'] = 'database name'
+mysql = MySQL(app)
 
-@app.route('/')
-def index():
-    return 'Welcome to the Finance Tracker!'
+CORS(app, resources={r"/*": {"origins": "http://localhost:8080"}})  # Lubab ligipääsu ainult 8080 pordile
 
-@app.route('/user-data')
-def get_user_data():
-    headers = {
-        'Authorization': AUTH_TOKEN,
-        'Consent-ID': '520189d2-e8bb-48ae-8221-45bed93b7316',  # Kasuta uut Consent-ID-d
-        'X-Request-ID': '99391c7e-ad88-49ec-a2ad-99ddcb1f7721',  # Kasuta uut X-Request-ID-d
-        'Accept': 'application/hal+json;charset=UTF-8'
-    }
+@app.route('/signup', methods=['POST'])
+def register():
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+    email = data.get('email')
     
-    try:
-        response = requests.get(f'{LHV_API_BASE_URL}/accounts?onlyActive=true', headers=headers, cert=(CERTIFICATE_PATH, PRIVATE_KEY_PATH))
-        response.raise_for_status()  # Kontrollib HTTP vigu
-        return jsonify(response.json())
-    except requests.exceptions.RequestException as e:
-        return jsonify({"error": str(e)}), 500
+    if not username or not password or not email:
+        return jsonify({"error": "Palun täitke kõik väljad!"}), 400
+    
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor.execute('SELECT * FROM users WHERE username = %s OR email = %s', (username, email))
+    account = cursor.fetchone()
+    
+    if account:
+        return jsonify({"error": "Konto sellise kasutajanime või e-postiga juba eksisteerib!"}), 400
+    
+    if not re.match(r'[^@]+@[^@]+\.[^@]+', email):
+        return jsonify({"error": "Kehtetu e-posti aadress!"}), 400
+    
+    if not re.match(r'[A-Za-z0-9]+', username):
+        return jsonify({"error": "Kasutajanimi võib sisaldada ainult tähti ja numbreid!"}), 400
+    
+    cursor.execute('INSERT INTO users (username, email, password) VALUES (%s, %s, %s)', (username, email, password))
+    mysql.connection.commit()
+    
+    return jsonify({"message": "Konto on edukalt loodud!"}), 201
 
-if __name__ == '__main__':
-    app.run(ssl_context=(CERTIFICATE_PATH, PRIVATE_KEY_PATH))
-
+if __name__ == "__main__":
+    app.run(debug=True, port=5000)

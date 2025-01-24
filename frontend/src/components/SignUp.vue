@@ -48,11 +48,36 @@ export default {
     };
   },
   methods: {
-    handleSignUp() {
+    async handleSignUp() {
       if (this.password !== this.confirmPassword) {
         alert('Passwords do not match!');
-      } else {
-        console.log('Signing up with:', this.username, this.email, this.password);
+        return;
+      }
+
+      const userData = {
+        username: this.username,
+        email: this.email,
+        password: this.password
+      };
+
+      try {
+        const response = await fetch('http://localhost:5000/signup', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(userData)
+        });
+
+        const result = await response.json();
+        if (result.message) {
+          alert(result.message);
+          this.$router.push('/login');
+        } else {
+          alert(result.error);
+        }
+      } catch (error) {
+        console.error('Error:', error);
       }
     }
   }
